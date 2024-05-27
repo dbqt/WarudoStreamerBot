@@ -21,18 +21,12 @@ namespace DbqtExtensions.StreamerBot
         },
         AssetTypes = new Type[]
         {
-            typeof(StreamerBotReceiverAsset)
+            typeof(StreamerBotAsset)
         }
     )]
 
     public class StreamerBotPlugin : Plugin
     {
-        public StreamerBotClient Client { get; } = new StreamerBotClient();
-
-        protected override void OnDestroy()
-        {
-            Client.Dispose();
-            base.OnDestroy();
-        }
+        public StreamerBotClient StreamerBot { get; } = new StreamerBotClient();
     }
 }
