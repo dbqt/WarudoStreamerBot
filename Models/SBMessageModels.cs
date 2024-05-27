@@ -28,7 +28,7 @@ namespace DbqtExtensions.StreamerBot.Models
             public string type;
         }
 
-        public class SBEventsModel: SBMessageModel
+        public class SBEventsModel : SBMessageModel
         {
             public SBEventsListModel events;
         }
@@ -37,6 +37,20 @@ namespace DbqtExtensions.StreamerBot.Models
         {
             public string[] twitch;
             // TODO: support everything
+        }
+
+        public class SBActionsModel : SBMessageModel
+        {
+            public SBActionModel[] actions;
+        }
+
+        public class SBActionModel
+        {
+            public string id;
+            public string name;
+            public string group;
+            public int subaction_count;
+            public bool enabled;
         }
 
         public class SBTChatMessageModel : SBGenericModel

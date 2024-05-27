@@ -65,6 +65,15 @@ namespace DbqtExtensions.StreamerBot.Models
             public string[] Twitch;
         }
 
+        public class GetActionsModel : RequestModel
+        {
+            public GetActionsModel()
+            {
+                request = "GetActions";
+                id = "getactionsid";
+            }
+        }
+
         public class SendMessageModel : RequestModel
         {
             public ActionModel action;

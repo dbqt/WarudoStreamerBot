@@ -17,7 +17,8 @@ namespace DbqtExtensions.StreamerBot
         Version = "0.0.1",
         NodeTypes = new Type[]
         {
-           typeof(OnStreamerBotEventNode)
+           typeof(OnStreamerBotEventNode),
+           typeof(StreamerBotDoActionNode),
         },
         AssetTypes = new Type[]
         {

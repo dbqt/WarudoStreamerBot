@@ -25,6 +25,9 @@ namespace DbqtExtensions.StreamerBot
         public string[] TwitchEvents => twitchEvents;
         private string[] twitchEvents;
 
+        public SBActionsModel Actions => actions;
+        private SBActionsModel actions;
+
         private Dictionary<string, EventData> guidToEvents = new Dictionary<string, EventData>();
 
         private class EventData
@@ -83,17 +86,28 @@ namespace DbqtExtensions.StreamerBot
                     twitchEvents = getEventsMessage.events.twitch;
                 }
             }
-
-            // Handle every other events
-            var genericEvent = JsonConvert.DeserializeObject<SBGenericModel>(obj);
-            if (genericEvent != null && genericEvent.SBevent != null)
+            // Specifically handle the getactionsid event
+            else if (genericMessage != null && genericMessage.id != null && genericMessage.id.Equals("getactionsid"))
             {
-                var pairs = guidToEvents.Where(o => o.Value.EventName == genericEvent.SBevent.type);
-                foreach (var item in pairs)
+                var getActionsMessage = JsonConvert.DeserializeObject<SBActionsModel>(obj);
+                if (getActionsMessage != null)
                 {
-                    item.Value.EventHandler.Execute(obj);
+                    actions = getActionsMessage;
                 }
             }
+            // Handle every other events
+            else
+            {
+                var genericEvent = JsonConvert.DeserializeObject<SBGenericModel>(obj);
+                if (genericEvent != null && genericEvent.SBevent != null)
+                {
+                    var pairs = guidToEvents.Where(o => o.Value.EventName == genericEvent.SBevent.type);
+                    foreach (var item in pairs)
+                    {
+                        item.Value.EventHandler.Execute(obj);
+                    }
+                }
+            } 
         }
 
         private void WsClient_OnOpen(string obj)
@@ -102,6 +116,7 @@ namespace DbqtExtensions.StreamerBot
 
             // Retrieve the events once on connecting
             GetEvents();
+            GetActions();
 
             OnOpen?.Invoke(obj);
         }
@@ -111,8 +126,12 @@ namespace DbqtExtensions.StreamerBot
         /// </summary>
         public void GetEvents()
         {
-            var getEvents = new GetEventsModel();
-            wsClient.SendMessage(JsonConvert.SerializeObject(getEvents));
+            wsClient.SendMessage(JsonConvert.SerializeObject(new GetEventsModel()));
+        }
+
+        public void GetActions()
+        {
+            wsClient.SendMessage(JsonConvert.SerializeObject(new GetActionsModel()));
         }
 
         /// <summary>
