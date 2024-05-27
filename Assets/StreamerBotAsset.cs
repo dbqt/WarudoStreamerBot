@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -9,6 +10,7 @@ using Warudo.Core.Attributes;
 using Warudo.Core.Scenes;
 using Warudo.Plugins.Core;
 using Warudo.Plugins.Core.Assets;
+using static DbqtExtensions.StreamerBot.Models.SBMessageModels;
 
 namespace DbqtExtensions.StreamerBot
 {
@@ -23,43 +25,30 @@ namespace DbqtExtensions.StreamerBot
         public string Status = "Not started";
 
         [DataInput]
-        [DisabledIf(nameof(IsConnected))]
         [Label("IP Address")]
         public string IpAddress = "127.0.0.1";
 
         [DataInput]
-        [DisabledIf(nameof(IsConnected))]
         [Label("Port")]
         public int Port = 5050;
 
-        private bool isConnected = false;
+        [Trigger]
+        [Label("Refresh Connection")]
+        public void TriggerReset()
+        {
+            ResetClient();
+        }
+
         private StreamerBotClient client => Context.PluginManager.GetPlugin<StreamerBotPlugin>().StreamerBot;
-
-        public bool IsConnected() { return isConnected; }
-
-        public bool IsDisconnected() { return !isConnected; }
-
-        [Trigger]
-        [HiddenIf(nameof(IsConnected))]
-        [Label("Connect")]
-        public void ConnectStreamerBot()
-        {
-            client?.ConnectStreamerBot(IpAddress, Port.ToString());
-        }
-
-        [Trigger]
-        [HiddenIf(nameof(IsDisconnected))]
-        [Label("Disconnect")]
-        public void DisconnectStreamerBot()
-        {
-            client?.DisconnectStreamerBot();
-        }
+        private bool isConnected = false;
 
         protected override void OnCreate()
         {
-            Watch(nameof(IpAddress), delegate { UpdateStatus(); });
-            Watch(nameof(Port), delegate { UpdateStatus(); });
+            // Watch for address and port changes, reset the websocket client when it happens
+            Watch(nameof(IpAddress), delegate { ResetClient(); });
+            Watch(nameof(Port), delegate { ResetClient(); });
 
+            // Subscribe to client events
             if (client != null)
             {
                 client.OnMessage += OnClientMessage;
@@ -67,26 +56,44 @@ namespace DbqtExtensions.StreamerBot
                 client.OnClose += OnClientClose;
                 client.OnError += OnClientError;
             }
-            else
-            {
-                Log("Client was null during OnCreate");
-            }
 
-            UpdateStatus();
+            ResetClient();
             base.OnCreate();
         }
 
         protected override void OnDestroy()
         {
+            // Clean up client events
             if (client != null)
             {
                 client.OnMessage -= OnClientMessage;
                 client.OnOpen -= OnClientOpen;
                 client.OnClose -= OnClientClose;
                 client.OnError -= OnClientError;
+                client.DisconnectStreamerBot();
             }
             base.OnDestroy();
         }
+
+        /// <summary>
+        /// Disconnects the websocket client and reconnects it with the current address and port.
+        /// </summary>
+        private async void ResetClient()
+        {
+            if (client == null) { return; }
+
+            client.DisconnectStreamerBot();
+            await Context.PluginManager.GetPlugin<CorePlugin>().BeforeListenToPort();
+
+            client.ConnectStreamerBot(IpAddress, Port.ToString());
+            Context.PluginManager.GetPlugin<CorePlugin>().AfterListenToPort();
+
+            UpdateStatus();
+        }
+
+        /// <summary>
+        /// Updates the status string on the asset.
+        /// </summary>
         private void UpdateStatus()
         {
             if (isConnected)
@@ -95,11 +102,15 @@ namespace DbqtExtensions.StreamerBot
             }
             else
             {
-                Status = "Not started!";
+                Status = $"Disconnected - attempting to connect to {IpAddress}:{Port}";
             }
             BroadcastDataInput(nameof(Status));
         }
 
+        /// <summary>
+        /// Logs the message into Unity logs.
+        /// </summary>
+        /// <param name="message"></param>
         private void Log(string message)
         {
             Debug.Log($"[Dbqt.Asset.StreamerBot] {message}");
@@ -123,10 +134,9 @@ namespace DbqtExtensions.StreamerBot
             UpdateStatus();
         }
 
-        private void OnClientMessage(string msg)
+        private void OnClientMessage(string obj)
         {
-            Log(msg);
-            UpdateStatus();
+            Log(obj);
         }
     }
 }

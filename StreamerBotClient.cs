@@ -5,6 +5,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using static DbqtExtensions.StreamerBot.Models.SBMessageModels;
+using static DbqtExtensions.StreamerBot.Models.SBRequestModels;
 
 namespace DbqtExtensions.StreamerBot
 {
@@ -20,6 +22,27 @@ namespace DbqtExtensions.StreamerBot
 
         private WebSocketClient wsClient = null;
 
+        public string[] TwitchEvents => twitchEvents;
+        private string[] twitchEvents;
+
+        private Dictionary<string, EventData> guidToEvents = new Dictionary<string, EventData>();
+
+        private class EventData
+        {
+            public string Guid;
+            public IStreamerBotEventHandler EventHandler;
+            public string EventName;
+            public SBEnums.EventType EventType;
+
+            public EventData(string guid, IStreamerBotEventHandler eventHandler, string eventName, SBEnums.EventType eventType)
+            {
+                Guid = guid;
+                EventHandler = eventHandler;
+                EventName = eventName;
+                EventType = eventType;
+            }
+        }
+
         public StreamerBotClient()
         {
             ConnectionStatus = Status.Disconnected;
@@ -30,10 +53,6 @@ namespace DbqtExtensions.StreamerBot
             if (wsClient != null)
             {
                 wsClient.Disconnect();
-                wsClient.OnOpen -= WsClient_OnOpen;
-                wsClient.OnMessage -= WsClient_OnMessage;
-                wsClient.OnClose -= WsClient_OnClose;
-                wsClient.OnError -= WsClient_OnError;
                 wsClient.CleanUp();
             }
         }
@@ -53,24 +72,87 @@ namespace DbqtExtensions.StreamerBot
         private void WsClient_OnMessage(string obj)
         {
             OnMessage?.Invoke(obj);
+
+            // Specifically handle the geteventsid event
+            var genericMessage = JsonConvert.DeserializeObject<SBMessageModel>(obj);
+            if (genericMessage != null && genericMessage.id != null && genericMessage.id.Equals("geteventsid"))
+            {
+                var getEventsMessage = JsonConvert.DeserializeObject<SBEventsModel>(obj);
+                if (getEventsMessage != null && getEventsMessage.events != null)
+                {
+                    twitchEvents = getEventsMessage.events.twitch;
+                }
+            }
+
+            // Handle every other events
+            var genericEvent = JsonConvert.DeserializeObject<SBGenericModel>(obj);
+            if (genericEvent != null && genericEvent.SBevent != null)
+            {
+                var pairs = guidToEvents.Where(o => o.Value.EventName == genericEvent.SBevent.type);
+                foreach (var item in pairs)
+                {
+                    item.Value.EventHandler.Execute(obj);
+                }
+            }
         }
 
         private void WsClient_OnOpen(string obj)
         {
             ConnectionStatus = Status.Connected;
-            SubscribeTwitchEvents();
+
+            // Retrieve the events once on connecting
+            GetEvents();
 
             OnOpen?.Invoke(obj);
         }
 
-        private void SubscribeTwitchEvents()
+        /// <summary>
+        /// Retrieve all the events from StreamerBot.
+        /// </summary>
+        public void GetEvents()
         {
-            if (wsClient == null) { return; }
-
-            var subTwitchEvents = new SBRequestModels.SubscribeModel(new string[] { "ChatMessage", "RewardRedemption" });
-            wsClient.SendMessage(JsonConvert.SerializeObject(subTwitchEvents));
+            var getEvents = new GetEventsModel();
+            wsClient.SendMessage(JsonConvert.SerializeObject(getEvents));
         }
 
+        /// <summary>
+        /// Request StreamerBot to send specific events.
+        /// </summary>
+        public string SubscribeEvent(SBEnums.EventType eventType, string eventName, IStreamerBotEventHandler handler)
+        {
+            if (wsClient == null) { return null; }
+
+            // Keep track of the subscription
+            var guid = Guid.NewGuid().ToString();
+            guidToEvents.Add(guid, new EventData(guid, handler, eventName, eventType));
+
+            // Actually request StreamerBot
+            var newEvent = new SBRequestModels.SubscribeModel(eventType, new string[] { eventName }, guid);
+            wsClient.SendMessage(JsonConvert.SerializeObject(newEvent));
+            return guid;
+        }
+
+        /// <summary>
+        /// Request StreamerBot to stop sending specific events.
+        /// </summary>
+        public void UnSubscribeEvent(string guid)
+        {
+            if (wsClient == null) { return; }
+            if (!guidToEvents.ContainsKey(guid)) { return; }
+
+            var data = guidToEvents[guid];
+
+            // Guid here is for the new unsub request, so it needs to be different
+            var newEvent = new SBRequestModels.UnsubscribeModel(data.EventType, new string[] { data.EventName }, Guid.NewGuid().ToString());
+            wsClient.SendMessage(JsonConvert.SerializeObject(newEvent));
+
+            // Clean up the sub from the dictionary
+            guidToEvents.Remove(guid);
+        }
+
+        /// <summary>
+        /// Initializes the websocket client with the address and port and subscribes to all its events.
+        /// </summary>
         public void ConnectStreamerBot(string address, string port)
         {
             wsClient = new WebSocketClient();
@@ -82,10 +164,17 @@ namespace DbqtExtensions.StreamerBot
             wsClient.Connect();
         }
 
+        /// <summary>
+        /// Disconnects and cleans up the event subscriptions.
+        /// </summary>
         public void DisconnectStreamerBot()
         {
             if (wsClient != null)
-            { 
+            {
+                wsClient.OnOpen -= WsClient_OnOpen;
+                wsClient.OnMessage -= WsClient_OnMessage;
+                wsClient.OnClose -= WsClient_OnClose;
+                wsClient.OnError -= WsClient_OnError;
                 wsClient.Disconnect();
             }
             wsClient = null;
@@ -99,10 +188,25 @@ namespace DbqtExtensions.StreamerBot
             wsClient.SendMessage(JsonConvert.SerializeObject(twitchMessage));
         }
 
+        /// <summary>
+        /// Invokes an action in StreamerBot.
+        /// </summary>
         public void DoAction(string actionName, string actionId)
         {
             if (wsClient == null) { return; }
 
+            var actionRequest = new SBRequestModels.SendActionModel(actionId: actionId, actionName: actionName);
+            wsClient.SendMessage(JsonConvert.SerializeObject(actionRequest));
+        }
+
+        /// <summary>
+        /// Invokes an action in StreamerBot with arguments
+        /// </summary>
+        public void DoAction(string actionName, string actionId, string argument)
+        {
+            if (wsClient == null) { return; }
+
+            // TODO: use the argument
             var actionRequest = new SBRequestModels.SendActionModel(actionId: actionId, actionName: actionName);
             wsClient.SendMessage(JsonConvert.SerializeObject(actionRequest));
         }

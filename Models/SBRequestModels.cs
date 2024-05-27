@@ -8,7 +8,6 @@ namespace DbqtExtensions.StreamerBot.Models
 {
     public class SBRequestModels
     {
-        private const string SubscribeRequestType = "Subscribe";
         private const string DoActionRequestType = "DoAction";
         public class RequestModel
         {
@@ -16,16 +15,48 @@ namespace DbqtExtensions.StreamerBot.Models
             public string id;
         }
 
+        public class GetEventsModel : RequestModel
+        {
+            public GetEventsModel()
+            {
+                request = "GetEvents";
+                id = "geteventsid";
+            }
+        }
+
         public class SubscribeModel : RequestModel
         {
             public EventsModel events;
 
-            public SubscribeModel(string[] twitchEvents, string requestId = "subscribeid")
+            public SubscribeModel(SBEnums.EventType eventType, string[] eventsToAdd, string requestId = "subscribeid")
             {
-                request = SubscribeRequestType;
+                request = "Subscribe";
                 id = requestId;
                 events = new EventsModel();
-                events.Twitch = twitchEvents;
+                switch (eventType)
+                {
+                    case SBEnums.EventType.Twitch:
+                        events.Twitch = eventsToAdd;
+                        break;
+                }
+            }
+        }
+
+        public class UnsubscribeModel : RequestModel
+        {
+            public EventsModel events;
+
+            public UnsubscribeModel(SBEnums.EventType eventType, string[] eventsToRemove, string requestId = "unsubscribeid")
+            {
+                request = "UnSubscribe";
+                id = requestId;
+                events = new EventsModel();
+                switch (eventType)
+                {
+                    case SBEnums.EventType.Twitch:
+                        events.Twitch = eventsToRemove;
+                        break;
+                }
             }
         }
 

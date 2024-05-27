@@ -9,6 +9,11 @@ namespace DbqtExtensions.StreamerBot.Models
 {
     public class SBMessageModels
     {
+        public class SBMessageModel
+        {
+            public string id;
+        }
+
         public class SBGenericModel
         {
             public string timeStamp;
@@ -21,6 +26,17 @@ namespace DbqtExtensions.StreamerBot.Models
         {
             public string source;
             public string type;
+        }
+
+        public class SBEventsModel: SBMessageModel
+        {
+            public SBEventsListModel events;
+        }
+
+        public class SBEventsListModel
+        {
+            public string[] twitch;
+            // TODO: support everything
         }
 
         public class SBTChatMessageModel : SBGenericModel
@@ -175,19 +191,22 @@ namespace DbqtExtensions.StreamerBot.Models
             public int role;
         }
 
-        public class SBTRedeemRedemptionDataModel
+        public class SBTRewardDataModel
         {
+            public string id;
             public string title;
-            public string rewardId;
-            public int userId;
-            public string userName;
-            public string displayName;
             public int cost;
             public string prompt;
-            public bool inputRequired;
-            public bool enabled;
-            public bool paused;
-            public bool subOnly;
+        }
+
+        public class SBTRedeemRedemptionDataModel : SBMessageModel
+        {
+            public SBTRewardDataModel reward;
+            public int user_id;
+            public string user_name;
+            public string user_input;
+            public string status;
+            public string redeemed_at;
         }
 
         public class SBTSubsDataModel
