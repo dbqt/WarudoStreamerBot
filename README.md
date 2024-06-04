@@ -16,6 +16,9 @@ To make sending arguments easier, you can optionally use the [StringPair & Dicti
 1. Make sure your StreamerBot instance is running and the main websocket server is running.
 2. Add the StreamerBot asset to your scene and configure the IP Address and Port to match StreamerBot's websocket.
 3. If the asset is not yet connected to StreamerBot, click "Refresh connection".
+4. Add the `Do StreamerBot Action` node to a blueprint.
+5. Pick an action from the list to trigger.
+6. Setup the flow to trigger this node.
 
 ## Future plans
 Eventually, I want to add support for receiving events from StreamerBot.
