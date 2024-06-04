@@ -37,9 +37,13 @@ namespace QTExtensions.StreamerBot
 
         private StreamerBotClient client => Context.PluginManager.GetPlugin<StreamerBotPlugin>().StreamerBot;
         private bool isConnected = false;
+        private float reconnectTimer = 0f;
+
+        private const float ReconnectInterval = 5f;
 
         protected override void OnCreate()
         {
+            Log("OnCreate called");
             // Watch for address and port changes, reset the websocket client when it happens
             Watch(nameof(IpAddress), delegate { ResetClient(); });
             Watch(nameof(Port), delegate { ResetClient(); });
@@ -59,6 +63,7 @@ namespace QTExtensions.StreamerBot
 
         protected override void OnDestroy()
         {
+            Log("OnDestroy called");
             // Clean up client events
             if (client != null)
             {
@@ -69,6 +74,22 @@ namespace QTExtensions.StreamerBot
                 client.DisconnectStreamerBot();
             }
             base.OnDestroy();
+        }
+
+        public override void OnUpdate()
+        {
+            // If not connected, try again once in a while
+            if (!isConnected)
+            {
+                reconnectTimer += Time.deltaTime;
+                if (reconnectTimer > ReconnectInterval)
+                {
+                    reconnectTimer = 0f;
+                    Log("Trying to connect to StreamerBot...");
+                    ResetClient();
+                }
+            }
+            base.OnUpdate();
         }
 
         /// <summary>
@@ -100,7 +121,10 @@ namespace QTExtensions.StreamerBot
             {
                 Status = $"{"STREAMERBOT_DISCONNECTED".Localized()}{IpAddress}:{Port}";
             }
+
+            SetActive(isConnected);
             BroadcastDataInput(nameof(Status));
+            Log(Status);
         }
 
         /// <summary>
