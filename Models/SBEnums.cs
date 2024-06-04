@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace DbqtExtensions.StreamerBot.Models
+﻿namespace QTExtensions.StreamerBot.Models
 {
     public class SBEnums
     {

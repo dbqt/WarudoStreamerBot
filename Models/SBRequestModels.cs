@@ -1,14 +1,24 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
 
-namespace DbqtExtensions.StreamerBot.Models
+namespace QTExtensions.StreamerBot.Models
 {
+    /// <summary>
+    /// Models for serialization of StreamerBot outgoing requests.
+    /// </summary>
     public class SBRequestModels
     {
         private const string DoActionRequestType = "DoAction";
+        public class EventsModel
+        {
+            public string[] Twitch;
+        }
+
+        public class ActionModel
+        {
+            public string id;
+            public string name;
+        }
+
         public class RequestModel
         {
             public string request;
@@ -60,11 +70,6 @@ namespace DbqtExtensions.StreamerBot.Models
             }
         }
 
-        public class EventsModel
-        {
-            public string[] Twitch;
-        }
-
         public class GetActionsModel : RequestModel
         {
             public GetActionsModel()
@@ -74,41 +79,22 @@ namespace DbqtExtensions.StreamerBot.Models
             }
         }
 
-        public class SendMessageModel : RequestModel
-        {
-            public ActionModel action;
-            public SendMessageArgs args;
-
-            public SendMessageModel(string message, string actionId = "f43d2f87-1e95-4eae-a7ed-dd280bfa934b", string actionName = "QTBotMessage", string requestId = "sendmessageid")
-            {
-                request = DoActionRequestType;
-                id = requestId;
-                action = new ActionModel() { id = actionId, name = actionName };
-                args = new SendMessageArgs() { msg = message };
-            }
-        }
-
         public class SendActionModel : RequestModel
         {
             public ActionModel action;
+            public Dictionary<string, string> args;
 
-            public SendActionModel(string actionId = "f43d2f87-1e95-4eae-a7ed-dd280bfa934b", string actionName = "QTBotMessage")
+            public SendActionModel(string actionId = "", string actionName = "", Dictionary<string, string> arguments = null)
             {
                 request = DoActionRequestType;
                 id = actionName;
                 action = new ActionModel() { id = actionId, name = actionName };
+
+                if (arguments != null)
+                {
+                    args = arguments;
+                }
             }
-        }
-
-        public class ActionModel
-        {
-            public string id;
-            public string name;
-        }
-
-        public class SendMessageArgs
-        {
-            public string msg;
         }
     }
 }

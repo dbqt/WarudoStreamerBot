@@ -1,15 +1,18 @@
-﻿using DbqtExtensions.StreamerBot.Models;
+﻿using QTExtensions.StreamerBot.Models;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using static DbqtExtensions.StreamerBot.Models.SBMessageModels;
-using static DbqtExtensions.StreamerBot.Models.SBRequestModels;
+using static QTExtensions.StreamerBot.Models.SBMessageModels;
+using static QTExtensions.StreamerBot.Models.SBRequestModels;
 
-namespace DbqtExtensions.StreamerBot
+namespace QTExtensions.StreamerBot
 {
+    /// <summary>
+    /// Client encapsulating the websocket client logic to communicate with StreamerBot and exposes some of its data.
+    /// </summary>
     public class StreamerBotClient
     {
         public enum Status { Connected, Disconnected }
@@ -23,10 +26,12 @@ namespace DbqtExtensions.StreamerBot
         private WebSocketClient wsClient = null;
 
         public string[] TwitchEvents => twitchEvents;
-        private string[] twitchEvents;
+        private string[] twitchEvents = { };
 
-        public SBActionsModel Actions => actions;
-        private SBActionsModel actions;
+        public string[] Actions => actions;
+        private string[] actions = { };
+
+        public Dictionary<string, SBActionModel> ActionGuidToModel = new Dictionary<string, SBActionModel>();
 
         private Dictionary<string, EventData> guidToEvents = new Dictionary<string, EventData>();
 
@@ -76,13 +81,15 @@ namespace DbqtExtensions.StreamerBot
         {
             OnMessage?.Invoke(obj);
 
-            // Specifically handle the geteventsid event
             var genericMessage = JsonConvert.DeserializeObject<SBMessageModel>(obj);
+
+            // Specifically handle the geteventsid event
             if (genericMessage != null && genericMessage.id != null && genericMessage.id.Equals("geteventsid"))
             {
                 var getEventsMessage = JsonConvert.DeserializeObject<SBEventsModel>(obj);
                 if (getEventsMessage != null && getEventsMessage.events != null)
                 {
+                    // TODO: Get other types of events as well
                     twitchEvents = getEventsMessage.events.twitch;
                 }
             }
@@ -92,7 +99,16 @@ namespace DbqtExtensions.StreamerBot
                 var getActionsMessage = JsonConvert.DeserializeObject<SBActionsModel>(obj);
                 if (getActionsMessage != null)
                 {
-                    actions = getActionsMessage;
+                    ActionGuidToModel.Clear();
+
+                    List<string> actionIds = new List<string>();
+                    foreach (var action in getActionsMessage.actions)
+                    {
+                        actionIds.Add(action.id);
+                        ActionGuidToModel[action.id] = action;
+                    }
+
+                    actions = actionIds.ToArray();
                 }
             }
             // Handle every other events
@@ -101,6 +117,7 @@ namespace DbqtExtensions.StreamerBot
                 var genericEvent = JsonConvert.DeserializeObject<SBGenericModel>(obj);
                 if (genericEvent != null && genericEvent.SBevent != null)
                 {
+                    // Find all the event handlers listening to this event type
                     var pairs = guidToEvents.Where(o => o.Value.EventName == genericEvent.SBevent.type);
                     foreach (var item in pairs)
                     {
@@ -114,23 +131,30 @@ namespace DbqtExtensions.StreamerBot
         {
             ConnectionStatus = Status.Connected;
 
-            // Retrieve the events once on connecting
-            GetEvents();
-            GetActions();
+            // Retrieve the events and actions once on connecting
+            RefreshEvents();
+            RefreshActions();
 
             OnOpen?.Invoke(obj);
         }
 
         /// <summary>
-        /// Retrieve all the events from StreamerBot.
+        /// Retrieve all events from StreamerBot.
         /// </summary>
-        public void GetEvents()
+        public void RefreshEvents()
         {
+            if (wsClient == null) { return; }
+
             wsClient.SendMessage(JsonConvert.SerializeObject(new GetEventsModel()));
         }
 
-        public void GetActions()
+        /// <summary>
+        /// Retrive all actions from StreamerBot.
+        /// </summary>
+        public void RefreshActions()
         {
+            if (wsClient == null) { return; }
+
             wsClient.SendMessage(JsonConvert.SerializeObject(new GetActionsModel()));
         }
 
@@ -199,34 +223,22 @@ namespace DbqtExtensions.StreamerBot
             wsClient = null;
         }
 
-        public void SendToTwitchChat(string message, string actionName, string actionId)
-        {
-            if (wsClient == null) { return; }
-
-            var twitchMessage = new SBRequestModels.SendMessageModel(message, actionId: actionId, actionName: actionName);
-            wsClient.SendMessage(JsonConvert.SerializeObject(twitchMessage));
-        }
-
         /// <summary>
         /// Invokes an action in StreamerBot.
         /// </summary>
         public void DoAction(string actionName, string actionId)
         {
-            if (wsClient == null) { return; }
-
-            var actionRequest = new SBRequestModels.SendActionModel(actionId: actionId, actionName: actionName);
-            wsClient.SendMessage(JsonConvert.SerializeObject(actionRequest));
+            DoAction(actionName, actionId);
         }
 
         /// <summary>
         /// Invokes an action in StreamerBot with arguments
         /// </summary>
-        public void DoAction(string actionName, string actionId, string argument)
+        public void DoAction(string actionName, string actionId, Dictionary<string, string> arguments = null)
         {
             if (wsClient == null) { return; }
 
-            // TODO: use the argument
-            var actionRequest = new SBRequestModels.SendActionModel(actionId: actionId, actionName: actionName);
+            var actionRequest = new SendActionModel(actionId: actionId, actionName: actionName, arguments: arguments);
             wsClient.SendMessage(JsonConvert.SerializeObject(actionRequest));
         }
     }

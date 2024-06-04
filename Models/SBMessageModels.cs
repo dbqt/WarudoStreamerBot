@@ -1,12 +1,11 @@
 ﻿using Newtonsoft.Json;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace DbqtExtensions.StreamerBot.Models
+namespace QTExtensions.StreamerBot.Models
 {
+    /// <summary>
+    /// Models for serialization of StreamerBot incoming messages.
+    /// </summary>
     public class SBMessageModels
     {
         public class SBMessageModel
@@ -35,8 +34,43 @@ namespace DbqtExtensions.StreamerBot.Models
 
         public class SBEventsListModel
         {
+            public string[] general;
             public string[] twitch;
-            // TODO: support everything
+            public string[] streamlabs;
+            public string[] speechToText;
+            public string[] command;
+            public string[] fileWatcher;
+            public string[] fileTail;
+            public string[] quote;
+            public string[] misc;
+            public string[] raw;
+            public string[] websocketClient;
+            public string[] streamElements;
+            public string[] websocketCustomServer;
+            public string[] donorDrive;
+            public string[] youTube;
+            public string[] pulsoid;
+            public string[] hypeRate;
+            public string[] kofi;
+            public string[] patreon;
+            public string[] application;
+            public string[] tipeeeStream;
+            public string[] treatStream;
+            public string[] shopify;
+            public string[] obs;
+            public string[] midi;
+            public string[] hotKey;
+            public string[] streamDeck;
+            public string[] custom;
+            public string[] vTubeStudio;
+            public string[] crowdControl;
+            public string[] elgato;
+            public string[] streamlabsDesktop;
+            public string[] speakerBot;
+            public string[] fourthwall;
+            public string[] trovo;
+            public string[] vStream;
+            public string[] throwingSystem;
         }
 
         public class SBActionsModel : SBMessageModel

@@ -1,0 +1,14 @@
+{
+	"en"" {
+		"STREAMERBOT_TITLE": "StreamerBot Integration",
+		"STREAMERBOT_DESCRIPTION": "Receive and send events through StreamerBot using Websocket",
+		"STREAMERBOT_NODE_CATEGORY": "StreamerBot",
+		"STREAMERBOT_IP": "IP Address",
+		"STREAMERBOT_PORT": "Port",
+		"STREAMERBOT_REFRESH": "Refresh connection",
+		"STREAMERBOT_CONNECTED": "Connected to StreamerBot at ",
+		"STREAMERBOT_DISCONNECTED": "Disconnected from StreamerBot at ",
+		"STREAMERBOT_DOACTION": "Do StreamerBot Action",
+		"STREAMERBOT_NONAMEACTIONCATEGORY": "<No Name>"
+	}"
+}

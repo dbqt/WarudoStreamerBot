@@ -1,28 +1,28 @@
 ﻿using Cysharp.Threading.Tasks;
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
-using UnityEngine;
 using Warudo.Core;
 using Warudo.Core.Attributes;
 using Warudo.Core.Data;
 using Warudo.Core.Graphs;
-using Warudo.Core.Server;
+using Warudo.Core.Localization;
+using static QTExtensions.StreamerBot.Models.SBMessageModels;
 
-namespace DbqtExtensions.StreamerBot.Nodes
+namespace QTExtensions.StreamerBot.Nodes
 {
+    /// <summary>
+    /// Node to execute any action on StreamerBot with optional arguments.
+    /// </summary>
     [NodeType(
     Id = "751950bb-c504-4ee6-8336-849d799f48b6",
-    Title = "Do StreamerBot Action",
-    Category = "StreamerBot")]
+    Title = "STREAMERBOT_DOACTION",
+    Category = "STREAMERBOT_NODE_CATEGORY")]
     public class StreamerBotDoActionNode : Node
     {
         [FlowInput]
         public Continuation Enter() 
         {
-            client.DoAction(actionName, actionId);
+            client.DoAction(actionName, actionId, Args);
             return null;
         }
 
@@ -33,6 +33,9 @@ namespace DbqtExtensions.StreamerBot.Nodes
         [AutoComplete(nameof(GetActions), true)]
         public string Action;
 
+        [DataInput]
+        public Dictionary<string, string> Args;
+
         private string actionId;
         private string actionName;
 
@@ -42,51 +45,69 @@ namespace DbqtExtensions.StreamerBot.Nodes
         {
             Watch(nameof(Action), delegate { UpdateAction(); });
 
+            client?.RefreshActions();
+
             base.OnCreate();
         }
 
+        /// <summary>
+        /// Retrieves all the possible actions from StreamerBot and generate a dropdown list.
+        /// </summary>
         public async UniTask<AutoCompleteList> GetActions()
         {
+            if (client == null) { return null; }
+
             AutoCompleteList list = new AutoCompleteList();
             list.categories = new List<AutoCompleteCategory>();
-            var organizedActions = new Dictionary<string, List<(string, string)>>();
+            var organizedActions = new Dictionary<string, List<SBActionModel>>();
 
-            // Get every action possible and split them by category
-            foreach (var action in client.Actions.actions)
+            await Task.Run(() =>
             {
-                // HACK: There can be a null category, assign a string of one space instead
-                var groupString = string.IsNullOrEmpty(action.group) ? " " : action.group;
-
-                // Create the category if it doesn't exist yet
-                if (!organizedActions.ContainsKey(groupString))
+                // Get every action possible and split them by category
+                foreach (var actionId in client.Actions)
                 {
-                    organizedActions.Add(groupString, new List<(string, string)>());
+                    // There can be a null category, assign an arbitrary string
+                    var action = client.ActionGuidToModel[actionId];
+                    var groupString = string.IsNullOrEmpty(action.group) ? "STREAMERBOT_NONAMEACTIONCATEGORY".Localized() : action.group;
+
+                    // Create the category if it doesn't exist yet
+                    if (!organizedActions.ContainsKey(groupString))
+                    {
+                        organizedActions.Add(groupString, new List<SBActionModel>());
+                    }
+
+                    // Add the action to the category
+                    organizedActions[groupString].Add(action);
                 }
 
-                // Add the action to the category
-                organizedActions[groupString].Add((action.name, action.id));
-            }
-
-            foreach (var group in organizedActions)
-            {
-                // Give the AutoCompleteCategory the correct label and initialize the list of entries
-                var category = new AutoCompleteCategory() { title = group.Key, entries = new List<AutoCompleteEntry>() };
-
-                // Add every action under that category
-                foreach (var action in group.Value)
+                foreach (var group in organizedActions)
                 {
-                    category.entries.Add(new AutoCompleteEntry() { label = $"{action.Item1} - {action.Item2}", value = action.Item2 });
+                    // Give the AutoCompleteCategory the correct label and initialize the list of entries
+                    var category = new AutoCompleteCategory() { title = group.Key, entries = new List<AutoCompleteEntry>() };
+
+                    // Add every action under that category
+                    foreach (var action in group.Value)
+                    {
+                        category.entries.Add(new AutoCompleteEntry() { label = $"{action.name} [{action.id}]", value = action.id });
+                    }
+                    list.categories.Add(category);
                 }
-                list.categories.Add(category);
-            }
+            });
 
             return list;
         }
 
+        /// <summary>
+        /// Update the local data with the selected action.
+        /// </summary>
         public void UpdateAction()
         {
+            if (client == null) { return; }
+
             actionId = Action;
-            actionName = client.Actions.actions.Where(a => a.id == actionId).FirstOrDefault()?.name;
+            actionName = client.ActionGuidToModel[actionId].name;
+
+            client?.RefreshActions();
         }
     }
 }

@@ -1,23 +1,19 @@
-﻿using DbqtExtensions.StreamerBot.Nodes;
+﻿using QTExtensions.StreamerBot.Nodes;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Warudo.Core.Attributes;
 using Warudo.Core.Plugins;
 
-namespace DbqtExtensions.StreamerBot
+namespace QTExtensions.StreamerBot
 {
     [PluginType(
         Id = "Dbqt.StreamerBot",
         Name = "StreamerBot",
-        Description = "Receive and send events through StreamerBot using Websocket",
+        Description = "STREAMERBOT_DESCRIPTION",
         Author = "Dbqt",
         Version = "0.0.1",
         NodeTypes = new Type[]
         {
-           typeof(OnStreamerBotEventNode),
+           // typeof(OnStreamerBotEventNode),
            typeof(StreamerBotDoActionNode),
         },
         AssetTypes = new Type[]

@@ -1,22 +1,18 @@
-﻿using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using UnityEngine;
+﻿using UnityEngine;
 using Warudo.Core;
 using Warudo.Core.Attributes;
+using Warudo.Core.Localization;
 using Warudo.Core.Scenes;
 using Warudo.Plugins.Core;
-using Warudo.Plugins.Core.Assets;
-using static DbqtExtensions.StreamerBot.Models.SBMessageModels;
 
-namespace DbqtExtensions.StreamerBot
+namespace QTExtensions.StreamerBot
 {
+    /// <summary>
+    /// Asset to enable StreamerBot integration.
+    /// </summary>
     [AssetType(
         Id = "f30ca027-aa50-4668-981c-93ab905c8f2b",
-        Title = "StreamerBot Integration", 
+        Title = "STREAMERBOT_TITLE", 
         Category = "CATEGORY_EXTERNAL_INTEGRATION", 
         Singleton = true)]
     public class StreamerBotAsset : Asset
@@ -25,15 +21,15 @@ namespace DbqtExtensions.StreamerBot
         public string Status = "Not started";
 
         [DataInput]
-        [Label("IP Address")]
+        [Label("STREAMERBOT_IP")]
         public string IpAddress = "127.0.0.1";
 
         [DataInput]
-        [Label("Port")]
+        [Label("STREAMERBOT_PORT")]
         public int Port = 5050;
 
         [Trigger]
-        [Label("Refresh Connection")]
+        [Label("STREAMERBOT_REFRESH")]
         public void TriggerReset()
         {
             ResetClient();
@@ -98,11 +94,11 @@ namespace DbqtExtensions.StreamerBot
         {
             if (isConnected)
             {
-                Status = $"Connected to {IpAddress}:{Port}";
+                Status = $"{"STREAMERBOT_CONNECTED".Localized()}{IpAddress}:{Port}";
             }
             else
             {
-                Status = $"Disconnected - attempting to connect to {IpAddress}:{Port}";
+                Status = $"{"STREAMERBOT_DISCONNECTED".Localized()}{IpAddress}:{Port}";
             }
             BroadcastDataInput(nameof(Status));
         }

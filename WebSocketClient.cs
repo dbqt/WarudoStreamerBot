@@ -1,12 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using WebSocketSharp;
 
-namespace DbqtExtensions.StreamerBot
+namespace QTExtensions.StreamerBot
 {
+    /// <summary>
+    /// Generic client encapsulating a <see cref="WebSocket"/> while exposing some basic functionality and events.
+    /// </summary>
     public class WebSocketClient
     {
         private string webSocketAddress;
