@@ -24,6 +24,7 @@ To make sending arguments easier, you can optionally use the [StringPair & Dicti
 Eventually, I want to add support for receiving events from StreamerBot.
 
 ## Release notes
+2024-06-25: Fixed lag when StreamerBot is not running.
 2024-06-04: Initial release with "Do StreamerBot Action" node.
 
 ## Support
