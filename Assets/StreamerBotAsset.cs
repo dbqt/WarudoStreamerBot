@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System.Threading.Tasks;
+using UnityEngine;
 using Warudo.Core;
 using Warudo.Core.Attributes;
 using Warudo.Core.Localization;
@@ -99,11 +100,14 @@ namespace QTExtensions.StreamerBot
         {
             if (client == null) { return; }
 
-            client.DisconnectStreamerBot();
-            await Context.PluginManager.GetPlugin<CorePlugin>().BeforeListenToPort();
+            await Task.Run(async () =>
+            {
+                client.DisconnectStreamerBot();
+                await Context.PluginManager.GetPlugin<CorePlugin>().BeforeListenToPort();
 
-            client.ConnectStreamerBot(IpAddress, Port.ToString());
-            Context.PluginManager.GetPlugin<CorePlugin>().AfterListenToPort();
+                client.ConnectStreamerBot(IpAddress, Port.ToString());
+                Context.PluginManager.GetPlugin<CorePlugin>().AfterListenToPort();
+            });
 
             UpdateStatus();
         }
