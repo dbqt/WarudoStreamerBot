@@ -139,11 +139,19 @@ namespace QTExtensions.StreamerBot
         }
 
         /// <summary>
+        /// Whether the WebSocket client is connected.
+        /// </summary>
+        public bool IsReady()
+        {
+            return wsClient != null && ConnectionStatus == Status.Connected;
+        }
+
+        /// <summary>
         /// Retrieve all events from StreamerBot.
         /// </summary>
         public void RefreshEvents()
         {
-            if (wsClient == null) { return; }
+            if (!IsReady()) { return; }
 
             wsClient.SendMessage(JsonConvert.SerializeObject(new GetEventsModel()));
         }
@@ -153,7 +161,7 @@ namespace QTExtensions.StreamerBot
         /// </summary>
         public void RefreshActions()
         {
-            if (wsClient == null) { return; }
+            if (!IsReady()) { return; }
 
             wsClient.SendMessage(JsonConvert.SerializeObject(new GetActionsModel()));
         }
@@ -163,7 +171,7 @@ namespace QTExtensions.StreamerBot
         /// </summary>
         public string SubscribeEvent(SBEnums.EventType eventType, string eventName, IStreamerBotEventHandler handler)
         {
-            if (wsClient == null) { return null; }
+            if (!IsReady()) { return null; }
 
             // Keep track of the subscription
             var guid = Guid.NewGuid().ToString();
@@ -180,7 +188,7 @@ namespace QTExtensions.StreamerBot
         /// </summary>
         public void UnSubscribeEvent(string guid)
         {
-            if (wsClient == null) { return; }
+            if (!IsReady()) { return; }
             if (!guidToEvents.ContainsKey(guid)) { return; }
 
             var data = guidToEvents[guid];
@@ -236,7 +244,7 @@ namespace QTExtensions.StreamerBot
         /// </summary>
         public void DoAction(string actionName, string actionId, Dictionary<string, string> arguments = null)
         {
-            if (wsClient == null) { return; }
+            if (!IsReady()) { return; }
 
             var actionRequest = new SendActionModel(actionId: actionId, actionName: actionName, arguments: arguments);
             wsClient.SendMessage(JsonConvert.SerializeObject(actionRequest));

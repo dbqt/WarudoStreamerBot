@@ -1,5 +1,7 @@
 ﻿using Newtonsoft.Json;
 using System;
+using Warudo.Core.Attributes;
+using Warudo.Core.Data;
 
 namespace QTExtensions.StreamerBot.Models
 {
@@ -78,12 +80,17 @@ namespace QTExtensions.StreamerBot.Models
             public SBActionModel[] actions;
         }
 
-        public class SBActionModel
+        public class SBActionModel : StructuredData
         {
+            [DataInput]
             public string id;
+            [DataInput]
             public string name;
+            [DataInput]
             public string group;
+            [DataInput]
             public int subaction_count;
+            [DataInput]
             public bool enabled;
         }
 

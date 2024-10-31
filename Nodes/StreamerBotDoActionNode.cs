@@ -1,5 +1,6 @@
 ﻿using Cysharp.Threading.Tasks;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Warudo.Core;
 using Warudo.Core.Attributes;
@@ -22,7 +23,7 @@ namespace QTExtensions.StreamerBot.Nodes
         [FlowInput]
         public Continuation Enter() 
         {
-            client.DoAction(actionName, actionId, Args);
+            client?.DoAction(CachedAction.name, CachedAction.id, Args);
             return null;
         }
 
@@ -36,8 +37,9 @@ namespace QTExtensions.StreamerBot.Nodes
         [DataInput]
         public Dictionary<string, string> Args;
 
-        private string actionId;
-        private string actionName;
+        [DataInput]
+        [Hidden]
+        public SBActionModel CachedAction;
 
         private StreamerBotClient client => Context.PluginManager.GetPlugin<StreamerBotPlugin>().StreamerBot;
 
@@ -45,8 +47,11 @@ namespace QTExtensions.StreamerBot.Nodes
         {
             Watch(nameof(Action), delegate { UpdateAction(); });
 
-            client?.RefreshActions();
-
+            if (client != null && client.IsReady())
+            {
+                client?.RefreshActions();
+            }
+            
             base.OnCreate();
         }
 
@@ -55,44 +60,52 @@ namespace QTExtensions.StreamerBot.Nodes
         /// </summary>
         public async UniTask<AutoCompleteList> GetActions()
         {
-            if (client == null) { return null; }
-
             AutoCompleteList list = new AutoCompleteList();
             list.categories = new List<AutoCompleteCategory>();
             var organizedActions = new Dictionary<string, List<SBActionModel>>();
 
-            await Task.Run(() =>
+            // Populate list from real data
+            if (client != null && client.IsReady())
             {
-                // Get every action possible and split them by category
-                foreach (var actionId in client.Actions)
+                await Task.Run(() =>
                 {
-                    // There can be a null category, assign an arbitrary string
-                    var action = client.ActionGuidToModel[actionId];
-                    var groupString = string.IsNullOrEmpty(action.group) ? "STREAMERBOT_NONAMEACTIONCATEGORY".Localized() : action.group;
-
-                    // Create the category if it doesn't exist yet
-                    if (!organizedActions.ContainsKey(groupString))
+                    // Get every action possible and split them by category
+                    foreach (var actionId in client.Actions)
                     {
-                        organizedActions.Add(groupString, new List<SBActionModel>());
+                        // There can be a null category, assign an arbitrary string
+                        var action = client.ActionGuidToModel[actionId];
+                        var groupString = string.IsNullOrEmpty(action.group) ? "STREAMERBOT_NONAMEACTIONCATEGORY".Localized() : action.group;
+
+                        // Create the category if it doesn't exist yet
+                        if (!organizedActions.ContainsKey(groupString))
+                        {
+                            organizedActions.Add(groupString, new List<SBActionModel>());
+                        }
+
+                        // Add the action to the category
+                        organizedActions[groupString].Add(action);
                     }
 
-                    // Add the action to the category
-                    organizedActions[groupString].Add(action);
-                }
-
-                foreach (var group in organizedActions)
-                {
-                    // Give the AutoCompleteCategory the correct label and initialize the list of entries
-                    var category = new AutoCompleteCategory() { title = group.Key, entries = new List<AutoCompleteEntry>() };
-
-                    // Add every action under that category
-                    foreach (var action in group.Value)
+                    foreach (var group in organizedActions)
                     {
-                        category.entries.Add(new AutoCompleteEntry() { label = $"{action.name} [{action.id}]", value = action.id });
+                        // Give the AutoCompleteCategory the correct label and initialize the list of entries
+                        var category = new AutoCompleteCategory() { title = group.Key, entries = new List<AutoCompleteEntry>() };
+
+                        // Add every action under that category
+                        foreach (var action in group.Value)
+                        {
+                            category.entries.Add(new AutoCompleteEntry() { label = $"{action.name} [{action.id}]", value = action.id });
+                        }
+                        list.categories.Add(category);
                     }
-                    list.categories.Add(category);
-                }
-            });
+                });
+            }
+            else
+            {
+                var category = new AutoCompleteCategory() { title = CachedAction.group, entries = new List<AutoCompleteEntry>() };
+                category.entries.Add(new AutoCompleteEntry() { label = $"{CachedAction.name} [{CachedAction.id}]", value = CachedAction.id });
+                list.categories.Add(category);
+            }
 
             return list;
         }
@@ -104,8 +117,12 @@ namespace QTExtensions.StreamerBot.Nodes
         {
             if (client == null) { return; }
 
-            actionId = Action;
-            actionName = client.ActionGuidToModel[actionId].name;
+            CachedAction.id = Action;
+            CachedAction.group = client.ActionGuidToModel[Action].group;
+            CachedAction.name = client.ActionGuidToModel[Action].name;
+            CachedAction.enabled = client.ActionGuidToModel[Action].enabled;
+            CachedAction.subaction_count = client.ActionGuidToModel[Action].subaction_count;
+            CachedAction.Broadcast();
 
             client?.RefreshActions();
         }
