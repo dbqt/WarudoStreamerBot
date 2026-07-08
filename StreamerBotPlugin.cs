@@ -10,7 +10,7 @@ namespace QTExtensions.StreamerBot
         Name = "StreamerBot",
         Description = "STREAMERBOT_DESCRIPTION",
         Author = "Dbqt",
-        Version = "0.0.1",
+        Version = "0.0.4",
         NodeTypes = new Type[]
         {
            // typeof(OnStreamerBotEventNode),

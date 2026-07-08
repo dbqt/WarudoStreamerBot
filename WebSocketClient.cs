@@ -28,7 +28,7 @@ namespace QTExtensions.StreamerBot
             webSocket?.Close();
         }
 
-        public void Initialize(string address = "127.0.0.1", string port = "5050")
+        public void Initialize(string address = "127.0.0.1", string port = "8080")
         {
             webSocketAddress = address;
             webSocketPort = port;

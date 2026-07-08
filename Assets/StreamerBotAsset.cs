@@ -27,7 +27,7 @@ namespace QTExtensions.StreamerBot
 
         [DataInput]
         [Label("STREAMERBOT_PORT")]
-        public int Port = 5050;
+        public int Port = 8080;
 
         [Trigger]
         [Label("STREAMERBOT_REFRESH")]

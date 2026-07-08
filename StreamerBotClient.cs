@@ -222,11 +222,11 @@ namespace QTExtensions.StreamerBot
         {
             if (wsClient != null)
             {
+                wsClient.Disconnect();
                 wsClient.OnOpen -= WsClient_OnOpen;
                 wsClient.OnMessage -= WsClient_OnMessage;
                 wsClient.OnClose -= WsClient_OnClose;
                 wsClient.OnError -= WsClient_OnError;
-                wsClient.Disconnect();
             }
             wsClient = null;
         }
