@@ -24,6 +24,9 @@ To make sending arguments easier, you can optionally use the [StringPair & Dicti
 Eventually, I want to add support for receiving events from StreamerBot.
 
 ## Release notes
+Fixed connection failing when switching between multiple scenes that have the assets.
+2026-07-07: Fixed connection failing when switching between multiple scenes that have the assets & changed default port to 8080.
+
 2024-10-30: Fixed nodes not saving correctly and deleting itself when StreamerBot is not connected.
 
 2024-06-25: Fixed lag when StreamerBot is not running.
